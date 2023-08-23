@@ -1,12 +1,3 @@
-#!/usr/bin/python3
-
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Feb  4 12:01:21 2019
-
-@author: Frank
-"""
-
 import csv
 import time
 import sys
@@ -14,56 +5,52 @@ import sys
 sourceData = "OnlineRetail.csv"
 placeholder = "LastLine.txt"
 
-def GetLineCount():
-    with open(sourceData, encoding='latin-1') as f:
-        for i, l in enumerate(f):
-            pass
-    return i
+def get_line_count(file_path):
+    with open(file_path, encoding='latin-1') as f:
+        return sum(1 for _ in f)
 
-def MakeLog(startLine, numLines):
-    destData = time.strftime("/var/log/cadabra/%Y%m%d-%H%M%S.log")
-    with open(sourceData, 'r', encoding='latin-1') as csvfile:
-        with open(destData, 'w') as dstfile:
-            reader = csv.reader(csvfile)
-            writer = csv.writer(dstfile)
-            next (reader) #skip header
-            inputRow = 0
-            linesWritten = 0
-            for row in reader:
-                inputRow += 1
-                if (inputRow > startLine):
-                    writer.writerow(row)
-                    linesWritten += 1
-                    if (linesWritten >= numLines):
-                        break
-            return linesWritten
-        
-    
-numLines = 100
-startLine = 0            
-if (len(sys.argv) > 1):
-    numLines = int(sys.argv[1])
-    
+def make_log(start_line, num_lines, source_file, dest_file):
+    with open(source_file, 'r') as csvfile, open(dest_file, 'w') as dstfile:
+        reader = csv.reader(csvfile)
+        writer = csv.writer(dstfile)
+        next(reader)  # skip header
+        lines_written = 0
+        for _ in range(start_line):
+            next(reader)  # Skip lines until start_line
+        for _ in range(num_lines):
+            try:
+                row = next(reader)
+                writer.writerow(row)
+                lines_written += 1
+            except StopIteration:
+                break
+        return lines_written
+
+num_lines = 100
+start_line = 0
+
+if len(sys.argv) > 1:
+    num_lines = int(sys.argv[1])
+
 try:
     with open(placeholder, 'r') as f:
-        for line in f:
-             startLine = int(line)
+        start_line = int(f.readline())
 except IOError:
-    startLine = 0
+    start_line = 0
 
-print("Writing " + str(numLines) + " lines starting at line " + str(startLine) + "\n")
+print(f"Writing {num_lines} lines starting at line {start_line}\n")
 
-totalLinesWritten = 0
-linesInFile = GetLineCount()
+total_lines_written = 0
+lines_in_file = get_line_count(sourceData)
 
-while (totalLinesWritten < numLines):
-    linesWritten = MakeLog(startLine, numLines - totalLinesWritten)
-    totalLinesWritten += linesWritten
-    startLine += linesWritten
-    if (startLine >= linesInFile):
-        startLine = 0
-        
-print("Wrote " + str(totalLinesWritten) + " lines.\n")
-    
+while total_lines_written < num_lines:
+    lines_written = make_log(start_line, num_lines - total_lines_written, sourceData, time.strftime("/var/log/cadabra/%Y%m%d-%H%M%S.log"))
+    total_lines_written += lines_written
+    start_line += lines_written
+    if start_line >= lines_in_file:
+        start_line = 0
+
+print(f"Wrote {total_lines_written} lines.\n")
+
 with open(placeholder, 'w') as f:
-    f.write(str(startLine))
+    f.write(str(start_line))
