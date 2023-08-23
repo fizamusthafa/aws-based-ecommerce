@@ -1,0 +1,16 @@
+{
+    "cloudwatch.emitMetrics": true,
+    "kinesis.endpoint": "kinesis.eu-central-1.amazonaws.com",
+    "flows": [
+        {
+            "filePattern": "/var/log/cadabra/*.csv",
+            "deliveryStream": "ecommerce-stream",
+            "dataProcessingOptions": [
+                {
+                    "initialPostion": "START_OF_FILE",
+                    "maxBufferAgeMillis": 2000
+                }
+            ]
+        }
+    ]
+}
